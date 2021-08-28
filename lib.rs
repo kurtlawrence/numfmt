@@ -246,7 +246,8 @@ const SN_PREC: Precision = Significance(7);
 const PREFIX_LIM: usize = 12;
 const UNITS_LIM: usize = 12;
 const SUFFIX_LIM: usize = 12;
-const BUF_LEN: usize = PREFIX_LIM + 21 + 3 + UNITS_LIM + SUFFIX_LIM;
+const FLOATBUF_LEN: usize = 22;
+const BUF_LEN: usize = PREFIX_LIM + FLOATBUF_LEN + 3 + UNITS_LIM + SUFFIX_LIM;
 
 // ########### FORMATTER #################################################################
 /// The number formatter configurations. See the [module documentation for use][link].
@@ -265,7 +266,7 @@ pub struct Formatter {
     ///
     /// The buffer is sized for:
     /// - 12 bytes: prefix
-    /// - 21 bytes: float repr <https://github.com/dtolnay/dtoa/issues/22>
+    /// - 22 bytes: float repr <https://github.com/dtolnay/dtoa/issues/22>
     /// - 3  bytes: 3x thou separator
     /// - 12 bytes: units
     /// - 12 bytes: suffix
@@ -473,7 +474,7 @@ impl Formatter {
     /// Returns the number of bytes written.
     /// Injects the thousands separator into the integer portion if it exists.
     fn write_num(&mut self, num: f64, precision: Precision) -> usize {
-        let mut tmp = [0; 21];
+        let mut tmp = [0; FLOATBUF_LEN];
         let n = dtoa::write(&mut tmp[..], num).expect(NOWRITE);
         let mut digits = 0;
         let mut written = 0;
@@ -1091,5 +1092,13 @@ mod tests {
 
         let s = fmtr.fmt(2_f64.powi(67));
         assert_eq!(s, "1.475739e20");
+    }
+
+    #[test]
+    fn panicking_number2() {
+        let mut f = Formatter::default();
+
+        let s = f.fmt(-0.0025053862329988824);
+        assert_eq!(s, "-0.002");
     }
 }
