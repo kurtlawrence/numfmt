@@ -1,0 +1,20 @@
+[package]
+name = "numfmt"
+version = "0.1.0"
+authors = ["kurt <kurtlawrence92@gmail.com>"]
+edition = "2018"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+dtoa = "0.4"
+itoa = "0.4"
+
+[dev-dependencies]
+criterion = "*"
+
+[[bench]]
+name = "numfmt-benchmarks"
+path = "bench.rs"
+harness = false
