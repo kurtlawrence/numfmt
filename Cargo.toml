@@ -8,8 +8,8 @@ edition = "2018"
 path = "lib.rs"
 
 [dependencies]
-dtoa = "0.4"
-itoa = "0.4"
+dtoa = "1"
+itoa = "1"
 
 [dev-dependencies]
 criterion = "*"

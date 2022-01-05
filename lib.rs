@@ -239,7 +239,6 @@ pub use parse::ParseError;
 /// Result type for [`Formatter`] methods.
 pub type Result = std::result::Result<Formatter, Error>;
 
-const NOWRITE: &str = "writing to buffer should never fail";
 const SN_BIG_CUTOFF: f64 = 1_000_000_000_000f64;
 const SN_SML_CUTOFF: f64 = 0.001;
 const SN_PREC: Precision = Significance(7);
@@ -454,8 +453,14 @@ impl Formatter {
                 let cursor = self.start + self.write_num(num, precision);
                 self.strbuf[cursor] = b'e'; // exponent
                 let cursor = 1 + cursor;
-                let cursor =
-                    cursor + itoa::write(&mut self.strbuf[cursor..], exponent).expect(NOWRITE);
+                let written = {
+                    let mut buf = itoa::Buffer::new();
+                    let s = buf.format(exponent);
+                    let end = cursor + s.len();
+                    self.strbuf[cursor..end].copy_from_slice(s.as_bytes());
+                    s.len()
+                };
+                let cursor = cursor + written;
                 self.apply_suffix_and_output(cursor)
             } else {
                 // write out the scaled number
@@ -474,8 +479,10 @@ impl Formatter {
     /// Returns the number of bytes written.
     /// Injects the thousands separator into the integer portion if it exists.
     fn write_num(&mut self, num: f64, precision: Precision) -> usize {
-        let mut tmp = [0; FLOATBUF_LEN];
-        let n = dtoa::write(&mut tmp[..], num).expect(NOWRITE);
+        let mut tmp = dtoa::Buffer::new();
+        let s = tmp.format(num);
+        let tmp = s.as_bytes();
+        let n = tmp.len();
         let mut digits = 0;
         let mut written = 0;
         let mut in_frac = false;
