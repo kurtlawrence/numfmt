@@ -1,8 +1,9 @@
 [package]
 name = "numfmt"
 version = "0.1.0"
-authors = ["kurt <kurtlawrence92@gmail.com>"]
+authors = ["Kurt Lawrence <kurtlawrence.info>"]
 edition = "2021"
+description = "Fast and friendly Rust number formatting"
 
 [lib]
 path = "lib.rs"

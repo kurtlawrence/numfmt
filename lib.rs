@@ -1,4 +1,4 @@
-//! Format numbers.
+//! Fast and friendly number formatting.
 //!
 //! Provides a [`Formatter`] to format decimal numbers with various methods. Formatting is
 //! performance focused, it is generally faster than `std` with more features. There is also a
@@ -73,9 +73,9 @@
 //!
 //! | Time (ns)        | 0.0 | 0.1234 | 2.718281828459045 | 1.797693148623157e307 |
 //! | ---------------- | --- | ------ | ----------------- | --------------------- |
-//! | numfmt - default | 35  | 115    | 170               | 243                   |
-//! | numfmt - cached  | 2   | 75     | 129               | 203                   |
-//! | std              | 35  | 96     | 133               | 245                   |
+//! | numfmt - default | 35  | 115    | 153               | 195                   |
+//! | numfmt - cached  | 2   | 75     | 89                | 126                   |
+//! | std              | 35  | 96     | 105               | 214                   |
 //!
 //! # Example - File size formatter
 //! Using a combination of a scale, suffix, and precision, a file size printer can be constructed:
