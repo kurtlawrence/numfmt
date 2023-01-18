@@ -1,9 +1,13 @@
 [package]
 name = "numfmt"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Kurt Lawrence <kurtlawrence.info>"]
 edition = "2021"
 description = "Fast and friendly Rust number formatting"
+repository = "https://github.com/kdr-aus/numfmt"
+license = "MIT"
+keywords = ["float-format", "number-format", "formatting"]
+categories = ["localization", "value-formatting"]
 
 [lib]
 path = "lib.rs"
