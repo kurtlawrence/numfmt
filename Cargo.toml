@@ -17,7 +17,7 @@ dtoa = "1"
 itoa = "1"
 
 [dev-dependencies]
-criterion = "*"
+criterion = "0.4"
 
 [[bench]]
 name = "numfmt-benchmarks"
