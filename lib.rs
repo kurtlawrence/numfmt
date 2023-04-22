@@ -272,6 +272,8 @@ pub struct Formatter {
     strbuf: Vec<u8>,
     /// Optional thousands separator character (restricted to a single byte)
     thou_sep: Option<u8>,
+    /// comma separation
+    comma: bool,
     /// If prefixed with something, this is the start of the _number_ portion.
     start: usize,
     /// Precision limits to formatting.
@@ -306,6 +308,7 @@ impl Formatter {
             suffix: [0; SUFFIX_LIM],
             suffix_len: 0,
             convert: |x| x,
+            comma: false,
         }
     }
 
@@ -362,6 +365,23 @@ impl Formatter {
     /// Set the scaling.
     pub fn scales(mut self, scales: Scales) -> Self {
         self.scales = scales;
+        self
+    }
+
+    /// Set the comma option.
+    ///
+    /// If set to true it will use a comma instead of a period.
+    ///
+    /// ```rust
+    /// # use numfmt::*;
+    /// let mut f = Formatter::new();
+    /// assert_eq!(f.fmt(0.67), "0.67");
+    /// f = f.comma(true);
+    /// assert_eq!(f.fmt(0.67), "0,67");
+    /// ```
+
+    pub fn comma(mut self, comma: bool) -> Self {
+        self.comma = comma;
         self
     }
 
@@ -488,6 +508,7 @@ impl Formatter {
         let mut in_frac = false;
         let mut thou = 2 - (num.abs().log10().trunc() as u8) % 3;
         let mut idx = self.start;
+        let sep = if self.comma { b',' } else { b'.' };
 
         for i in 0..n {
             let byte = tmp[i]; // obtain byte
@@ -495,13 +516,17 @@ impl Formatter {
             idx += 1;
             written += 1; // increment counter
 
+            if byte == b'.' && self.comma {
+                self.strbuf[idx - 1] = b',';
+            }
+
             if byte.is_ascii_digit() {
                 digits += 1;
                 thou += 1;
             }
 
             // look ahead otherwise it would include the decimal always even for 0 precision
-            if i + 1 < n && tmp[i + 1] == b'.' {
+            if i + 1 < n && tmp[i + 1] == sep {
                 in_frac = true;
                 if let Decimals(_) = precision {
                     digits = 0
