@@ -249,8 +249,10 @@
 use std::{cmp::*, error, fmt, hash::*};
 use Precision::*;
 
+mod numeric;
 mod parse;
 
+pub use numeric::Numeric;
 pub use parse::ParseError;
 
 /// Result type for [`Formatter`] methods.
@@ -485,17 +487,23 @@ impl Formatter {
     }
 
     /// Format the number!
+    #[deprecated = "consider using Formatter::fmt2 instead"]
     pub fn fmt(&mut self, num: f64) -> &str {
+        self.fmt2(num)
+    }
+
+    /// Format any number implementing [`Numeric`].
+    pub fn fmt2<N: Numeric>(&mut self, num: N) -> &str {
         if num.is_nan() {
             "NaN"
-        } else if num.is_infinite() && num.is_sign_negative() {
+        } else if num.is_infinite() && num.is_negative() {
             "-∞"
         } else if num.is_infinite() {
             "∞"
-        } else if num == 0.0 {
+        } else if num.is_zero() {
             "0"
         } else {
-            let num = (self.convert)(num);
+            let num = (self.convert)(num.to_f64());
 
             // scale num to supplied scales
             let (scaled, unit) = self.scales.scale(num);
@@ -860,6 +868,7 @@ impl Scales {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
     use std::f64::*;
