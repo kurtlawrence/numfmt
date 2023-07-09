@@ -50,6 +50,7 @@ pub fn parse_formatter(s: &str) -> std::result::Result<Formatter, ParseError> {
     let mut prec = None;
     let mut digits = false;
     let mut sep = Some(',');
+    let mut comma = false;
 
     while let Some((token, next)) = iter.next() {
         let next_is_digit = next.map(|t| matches!(t, Digit(_))).unwrap_or_default();
@@ -67,23 +68,31 @@ pub fn parse_formatter(s: &str) -> std::result::Result<Formatter, ParseError> {
                 };
                 digits = next_is_digit;
             }
-            Period if next == Some(Char('*')) => {
+            Period | Comma if next == Some(Char('*')) => {
                 no_precision = true;
+                comma = token == Comma;
                 iter.next();
             }
-            Tilde | Period if !next_is_digit => {
+            Tilde | Period | Comma if !next_is_digit => {
                 return Err(ParseError::Unexp(
                     "digit",
                     next.map(|t| t.as_char()).unwrap_or(' '),
                 ))
             }
-            Tilde | Period if no_precision => return Err(ParseError::DupPrec(no_precision, 0)),
-            Tilde | Period if prec.is_some() => {
+            Tilde | Period | Comma if no_precision => {
+                return Err(ParseError::DupPrec(no_precision, 0))
+            }
+            Tilde | Period | Comma if prec.is_some() => {
                 return Err(ParseError::DupPrec(no_precision, prec.unwrap()))
             }
             Period => {
                 digits = true;
                 use_dec = true;
+            }
+            Comma => {
+                digits = true;
+                use_dec = true;
+                comma = true;
             }
             Tilde => digits = true,
             // Single Char Matches
@@ -101,7 +110,12 @@ pub fn parse_formatter(s: &str) -> std::result::Result<Formatter, ParseError> {
                 iter.next();
             }
             CloseBracket => break,
-            tt => return Err(ParseError::Unexp("., ~, %, s, m, b, n, /, ]", tt.as_char())),
+            tt => {
+                return Err(ParseError::Unexp(
+                    "., ,, ~, %, s, m, b, n, /, ]",
+                    tt.as_char(),
+                ))
+            }
         }
     }
 
@@ -128,6 +142,8 @@ pub fn parse_formatter(s: &str) -> std::result::Result<Formatter, ParseError> {
     };
 
     f = f.separator(sep)?.prefix(&prefix)?.suffix(&suffix)?;
+    comma |= f.comma;
+    f = f.comma(comma);
 
     if no_precision {
         f = f.precision(Unspecified);
@@ -147,6 +163,7 @@ enum Token {
     OpenBracket,
     CloseBracket,
     Period,
+    Comma,
     Tilde,
     Slash,
     Digit(u8),
@@ -159,6 +176,7 @@ impl Token {
             '[' => OpenBracket,
             ']' => CloseBracket,
             '.' => Period,
+            ',' => Comma,
             '~' => Tilde,
             '/' => Slash,
             x if x.is_ascii_digit() => Digit(x.to_digit(10).unwrap() as u8),
@@ -171,6 +189,7 @@ impl Token {
             OpenBracket => '[',
             CloseBracket => ']',
             Period => '.',
+            Comma => ',',
             Tilde => '~',
             Slash => '/',
             Digit(d) => (d + 48).into(), // checked in tests
@@ -299,6 +318,16 @@ mod tests {
         let r = p("[.*]");
         assert_eq!(r, Ok(Formatter::default().precision(Unspecified)));
 
+        let r = p("[,*]");
+        assert_eq!(
+            r,
+            Ok(Formatter::default()
+                .separator('.')
+                .unwrap()
+                .comma(true)
+                .precision(Unspecified))
+        );
+
         let r = p("[.0]");
         assert_eq!(r, Ok(Formatter::default().precision(Decimals(0))));
         let r = p("[.5]");
@@ -306,12 +335,30 @@ mod tests {
         let r = p("[.15]");
         assert_eq!(r, Ok(Formatter::default().precision(Decimals(15))));
 
+        let r = p("[,15]");
+        assert_eq!(
+            r,
+            Ok(Formatter::default()
+                .separator('.')
+                .unwrap()
+                .precision(Decimals(15)))
+        );
+
         let r = p("[~0]");
         assert_eq!(r, Ok(Formatter::default().precision(Significance(0))));
         let r = p("[~5]");
         assert_eq!(r, Ok(Formatter::default().precision(Significance(5))));
         let r = p("[~15]");
         assert_eq!(r, Ok(Formatter::default().precision(Significance(15))));
+
+        let r = p("[~15/.]");
+        assert_eq!(
+            r,
+            Ok(Formatter::default()
+                .separator('.')
+                .unwrap()
+                .precision(Significance(15)))
+        );
     }
 
     #[test]
@@ -342,7 +389,10 @@ mod tests {
         assert_eq!(r, Ok(Formatter::default().separator('%').unwrap()));
 
         let r = p("[/.]");
-        assert_eq!(r, Ok(Formatter::default().separator('.').unwrap()));
+        assert_eq!(
+            r,
+            Ok(Formatter::default().separator('.').unwrap().comma(true))
+        );
     }
 
     #[test]
@@ -375,7 +425,7 @@ mod tests {
         assert!(r.is_err());
         assert_eq!(
             &r.unwrap_err().to_string(),
-            "unexpected character. expected a ., ~, %, s, m, b, n, /, ] but found 'f'"
+            "unexpected character. expected a ., ,, ~, %, s, m, b, n, /, ] but found 'f'"
         );
 
         let r = p("[.3~1]");
