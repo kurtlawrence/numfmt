@@ -9,9 +9,6 @@ license = "MIT"
 keywords = ["float-format", "number-format", "formatting"]
 categories = ["localization", "value-formatting"]
 
-[lib]
-path = "lib.rs"
-
 [dependencies]
 dtoa = "1"
 itoa = "1"
