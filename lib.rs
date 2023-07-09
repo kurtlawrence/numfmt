@@ -560,7 +560,6 @@ impl Formatter {
             idx += 1;
             written += 1; // increment counter
 
-
             if byte.is_ascii_digit() {
                 digits += 1;
                 thou += 1;
