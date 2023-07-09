@@ -97,8 +97,8 @@
 //! used as a user input for formatting numbers. The grammar is defined by a _prefix_, the number
 //! format enclosed in brackets, and then the _suffix_.
 //! ```text
-//! prefix[[.#|~#|.*][%|s|b|n][/<char>]]suffix
-//! ^----^ ^--------^^-------^^-------^ ^----^
+//! prefix[[.#|,#|~#|.*|,*][%|s|b|n][/<char>]]suffix
+//! ^----^ ^--------------^^-------^^-------^ ^----^
 //! prefix precision scale    separator suffix
 //! ```
 //! > Each component is optional, including the number format. All formats are applied to the
@@ -126,9 +126,11 @@
 //! ```
 //!
 //! ## Precision
-//! Precision is defined using a `.` for decimals, or a `~` for significant figures, followed by
-//! a number. A maximum of 255 is supported. There is a special case: `.*` which removes any
+//! Precision is defined using a `.`/`,` for decimals, or a `~` for significant figures, followed by
+//! a number. A maximum of 255 is supported. There is a special case: `.*`/`,*` which removes any
 //! default precision and uses [`Precision::Unspecified`].
+//! Note that usage of `,` signals to use periods as the separator and comma as the
+//! decimal marker. To use a comma with signficant figures, use a period separator.
 //!
 //! ### Example
 //! ```rust
@@ -137,6 +139,9 @@
 //! f = "[.2]".parse().unwrap(); // use two decimal places
 //! assert_eq!(f.fmt(1.2345), "1.23");
 //!
+//! f = "[,2]".parse().unwrap(); // use two decimal places with comma
+//! assert_eq!(f.fmt(1.2345), "1,23");
+//!
 //! f = "[.0]".parse().unwrap(); // use zero decimal places
 //! assert_eq!(f.fmt(10.234), "10");
 //!
@@ -144,9 +149,15 @@
 //! assert_eq!(f.fmt(1.234), "1.234");
 //! assert_eq!(f.fmt(12.2), "12.2");
 //!
+//! f = "[,*]".parse().unwrap(); // arbitary precision with comma
+//! assert_eq!(f.fmt(1.234), "1,234");
+//!
 //! f = "[~3]".parse().unwrap(); // 3 significant figures
 //! assert_eq!(f.fmt(1.234), "1.23");
 //! assert_eq!(f.fmt(10.234), "10.2");
+
+//! f = "[~3/.]".parse().unwrap(); // 3 significant figures with comma
+//! assert_eq!(f.fmt(1.234), "1,23");
 //! ```
 //!
 //! ## Scale
@@ -177,8 +188,10 @@
 //!
 //! ## Separator
 //! A separator character can be specified by using a forward slash `/` followed by a character.
-//! The parser uses the _next character verbatim_, unless that character is `]` in which case the
+//! The parser uses the _next character_, unless that character is `]` in which case the
 //! separator is set to `None`. The default separator is a comma.
+//! If a period separator `.` is specified, we take this as a signal to use a comma `,` as
+//! the decimal signifier.
 //!
 //! ### Example
 //! ```rust
@@ -190,14 +203,14 @@
 //! f = "[n/]".parse().unwrap(); // use no separator
 //! assert_eq!(f.fmt(12345.0), "12345.0");
 //!
-//! f = "[n/.]".parse().unwrap(); // use a period
-//! assert_eq!(f.fmt(12345.0), "12.345.0");
-//!
 //! f = "[n/_]".parse().unwrap(); // use a underscroll
 //! assert_eq!(f.fmt(12345.0), "12_345.0");
 //!
 //! f = "[n/ ]".parse().unwrap(); // use a space
 //! assert_eq!(f.fmt(12345.0), "12 345.0");
+//!
+//! f = "[n/.]".parse().unwrap(); // use period and commas
+//! assert_eq!(f.fmt(12345.0), "12.345,0");
 //! ```
 //!
 //! ## Composing formats
@@ -227,6 +240,10 @@
 //! // Units to 1 decimal place
 //! f = "[.1n] m/s".parse().unwrap();
 //! assert_eq!(f.fmt(12345.68), "12,345.6 m/s");
+//!
+//! // Using custom separator and period for decimals
+//! f = "[,1n/_]".parse().unwrap();
+//! assert_eq!(f.fmt(12345.68), "12_345,6");
 //! ```
 #![warn(missing_docs)]
 use std::{cmp::*, error, fmt, hash::*};
@@ -368,23 +385,6 @@ impl Formatter {
         self
     }
 
-    /// Set the comma option.
-    ///
-    /// If set to true it will use a comma instead of a period.
-    ///
-    /// ```rust
-    /// # use numfmt::*;
-    /// let mut f = Formatter::new();
-    /// assert_eq!(f.fmt(0.67), "0.67");
-    /// f = f.comma(true);
-    /// assert_eq!(f.fmt(0.67), "0,67");
-    /// ```
-
-    pub fn comma(mut self, comma: bool) -> Self {
-        self.comma = comma;
-        self
-    }
-
     /// Set the scaling via [`Scales::new`].
     pub fn build_scales(mut self, base: u16, units: Vec<&'static str>) -> Result {
         let scales = Scales::new(base, units)?;
@@ -395,11 +395,31 @@ impl Formatter {
     /// Set the thousands separator.
     ///
     /// If separator is not a single byte, an error is returned.
+    /// If the separator is a period `.`, this signals to use a comma for the decimal marker.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use numfmt::*;
+    /// let mut f = Formatter::new().separator(',').unwrap(); // use a comma
+    /// assert_eq!(f.fmt(12345.67), "12,345.67");
+    ///
+    /// f = f.separator(' ').unwrap(); // use a space
+    /// assert_eq!(f.fmt(12345.67), "12 345.67");
+    ///
+    /// f = f.separator(None).unwrap(); // no separator
+    /// assert_eq!(f.fmt(12345.67), "12345.67");
+    ///
+    /// f = f.separator('.').unwrap(); // use a period separator and comma for decimal
+    /// assert_eq!(f.fmt(12345.67), "12.345,67");
+    /// ```
     pub fn separator<S: Into<Option<char>>>(mut self, sep: S) -> Result {
         if let Some(sep) = sep.into() {
             if sep.len_utf8() != 1 {
                 Err(Error::InvalidSeparator(sep))
             } else {
+                if sep == '.' {
+                    self.comma = true;
+                }
                 let mut buf = [0];
                 sep.encode_utf8(&mut buf);
                 self.thou_sep = Some(buf[0]);
@@ -409,6 +429,31 @@ impl Formatter {
             self.thou_sep = None;
             Ok(self)
         }
+    }
+
+    /// Set the comma option.
+    ///
+    /// If set to true it will use a comma instead of a period.
+    /// If a comma is the separator, a period will be used instead.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use numfmt::*;
+    /// let mut f = Formatter::new();
+    /// assert_eq!(f.fmt(12345.67), "12345.67");
+    /// f = f.comma(true);
+    /// assert_eq!(f.fmt(12345.67), "12345,67");
+    ///
+    /// f = f.separator('.').unwrap();
+    /// assert_eq!(f.fmt(12345.67), "12.345,67");
+    /// ```
+    pub fn comma(mut self, comma: bool) -> Self {
+        self.comma = comma;
+        if comma && self.thou_sep == Some(b',') {
+            self.thou_sep = Some(b'.');
+        }
+        self
     }
 
     /// Sets the prefix.
@@ -508,7 +553,6 @@ impl Formatter {
         let mut in_frac = false;
         let mut thou = 2 - (num.abs().log10().trunc() as u8) % 3;
         let mut idx = self.start;
-        let sep = if self.comma { b',' } else { b'.' };
 
         for i in 0..n {
             let byte = tmp[i]; // obtain byte
@@ -516,9 +560,6 @@ impl Formatter {
             idx += 1;
             written += 1; // increment counter
 
-            if byte == b'.' && self.comma {
-                self.strbuf[idx - 1] = b',';
-            }
 
             if byte.is_ascii_digit() {
                 digits += 1;
@@ -526,14 +567,14 @@ impl Formatter {
             }
 
             // look ahead otherwise it would include the decimal always even for 0 precision
-            if i + 1 < n && tmp[i + 1] == sep {
+            if i + 1 < n && tmp[i + 1] == b'.' {
                 in_frac = true;
                 if let Decimals(_) = precision {
                     digits = 0
                 }
-            }
-
-            if !in_frac && thou == 3 {
+            } else if in_frac && byte == b'.' && self.comma {
+                self.strbuf[idx - 1] = b',';
+            } else if !in_frac && thou == 3 {
                 if let Some(sep) = self.thou_sep {
                     thou = 0;
                     self.strbuf[idx] = sep;
@@ -1132,5 +1173,16 @@ mod tests {
 
         let s = f.fmt(-0.0025053862329988824);
         assert_eq!(s, "-0.002");
+    }
+
+    #[test]
+    fn eu_testing() {
+        let mut f: Formatter = "[,2]".parse().unwrap();
+        let s = f.fmt(1.23);
+        assert_eq!(s, "1,23");
+
+        let mut f: Formatter = "[n/.]".parse().unwrap();
+        let s = f.fmt(12345.0);
+        assert_eq!(s, "12.345,0");
     }
 }
