@@ -1,6 +1,6 @@
 [package]
 name = "numfmt"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["Kurt Lawrence <kurtlawrence.info>"]
 edition = "2021"
 description = "Fast and friendly Rust number formatting"
