@@ -124,5 +124,5 @@ macro_rules! prim_impls {
 }
 
 prim_impls!(float => f32 f64);
-prim_impls!(uint => u8 u16 u32 u128 usize);
-prim_impls!(int => i8 i16 i32 i128 isize);
+prim_impls!(uint => u8 u16 u32 u64 u128 usize);
+prim_impls!(int => i8 i16 i32 i64 i128 isize);
