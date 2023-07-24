@@ -21,12 +21,10 @@ jobs:
         submodules: true
       
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
-        profile: minimal
         toolchain: stable
-        override: true
-        components: rustfmt,clippy
+        components: rustfmt, clippy
 
     - name: Fix cargo cache permission issue
       run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
