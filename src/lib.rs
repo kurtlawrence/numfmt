@@ -145,11 +145,11 @@
 //! f = "[.0]".parse().unwrap(); // use zero decimal places
 //! assert_eq!(f.fmt(10.234), "10");
 //!
-//! f = "[.*]".parse().unwrap(); // arbitary precision
+//! f = "[.*]".parse().unwrap(); // arbitrary precision
 //! assert_eq!(f.fmt(1.234), "1.234");
 //! assert_eq!(f.fmt(12.2), "12.2");
 //!
-//! f = "[,*]".parse().unwrap(); // arbitary precision with comma
+//! f = "[,*]".parse().unwrap(); // arbitrary precision with comma
 //! assert_eq!(f.fmt(1.234), "1,234");
 //!
 //! f = "[~3]".parse().unwrap(); // 3 significant figures
@@ -215,8 +215,8 @@
 //!
 //! ## Composing formats
 //! There have been examples of composing formats already. The `prefix[num]suffix` order must be
-//! adhered to, but the ordering within the number format is arbitary. It is recommended to keep it
-//! consistent with _precison, scaling, separator_ as this assists with readability and lowers the
+//! adhered to, but the ordering within the number format is arbitrary. It is recommended to keep it
+//! consistent with _precision, scaling, separator_ as this assists with readability and lowers the
 //! risk of malformed formats (which will error on the parsing phase).
 //!
 //! ### Various composed examples
@@ -278,7 +278,7 @@ const BUF_LEN: usize = PREFIX_LIM + FLOATBUF_LEN + 3 + UNITS_LIM + SUFFIX_LIM;
 #[derive(Debug, Clone)]
 pub struct Formatter {
     /// The formatter uses a buffer to avoid allocating when constructing the formatted string.
-    /// The formatting algorithm assumes the buffer size is large enough to accomodate writes into
+    /// The formatting algorithm assumes the buffer size is large enough to accommodate writes into
     /// it, care must be taken when altering what gets written to buffer. Ensure buffer is of
     /// adequate size.
     ///

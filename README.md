@@ -142,7 +142,7 @@ assert_eq!(f.fmt(1.2345), "1.23");
 f = "[.0]".parse().unwrap(); // use zero decimal places
 assert_eq!(f.fmt(10.234), "10");
 
-f = "[.*]".parse().unwrap(); // arbitary precision
+f = "[.*]".parse().unwrap(); // arbitrary precision
 assert_eq!(f.fmt(1.234), "1.234");
 assert_eq!(f.fmt(12.2), "12.2");
 
@@ -204,8 +204,8 @@ assert_eq!(f.fmt(12345.0), "12 345.0");
 
 ## Composing formats
 There have been examples of composing formats already. The `prefix[num]suffix` order must be
-adhered to, but the ordering within the number format is arbitary. It is recommended to keep it
-consistent with _precison, scaling, separator_ as this assists with readability and lowers the
+adhered to, but the ordering within the number format is arbitrary. It is recommended to keep it
+consistent with _precision, scaling, separator_ as this assists with readability and lowers the
 risk of malformed formats (which will error on the parsing phase).
 
 ### Various composed examples
