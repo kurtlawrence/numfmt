@@ -26,27 +26,15 @@ jobs:
         toolchain: stable
         components: rustfmt, clippy
 
-    - name: Fix cargo cache permission issue
-      run: sudo chown -R $(whoami):$(id -ng) ~/.cargo/
-      if: matrix.os == 'ubuntu-latest'
-
-    - name: Cache cargo Registry
-      uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
-        
-    - name: Cache cargo Index
-      uses: actions/cache@v2
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('Cargo.lock') }}
-      
-    - name: Cache cargo Build
-      uses: actions/cache@v2
-      with:
-        path: target/debug
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('Cargo.lock') }}
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Check Formatting
       run: cargo +stable fmt -- --check
