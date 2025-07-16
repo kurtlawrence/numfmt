@@ -18,6 +18,11 @@ macro_rules! repbench {
                 b.iter(|| black_box(f.fmt($val)))
             });
 
+            c.bench_function(stringify!(numfmt cached to string $fn), |b| {
+                let mut f = Formatter::default();
+                b.iter(|| black_box(f.fmt($val)))
+            });
+
             c.bench_function(stringify!(std $fn), |b| {
                 b.iter(|| black_box($val.to_string()))
             });

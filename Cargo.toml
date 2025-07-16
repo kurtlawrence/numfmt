@@ -14,7 +14,7 @@ dtoa = "1"
 itoa = "1"
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.6"
 quickcheck = "1"
 quickcheck_macros = "1"
 

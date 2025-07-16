@@ -68,16 +68,17 @@ assert_eq!(f.fmt(1234.56789), "1234.5");
 ```
 
 # Performance
-Formatting is generally faster than `std`'s `f64::to_string` implementation. When constructing
+Formatting is generally comparable to `std`'s `f64::to_string` implementation. When constructing
 a [`Formatter`] there is an allocation for the buffer, and an allocation for any scales.
 Reusing a [`Formatter`] is recommended to avoid unnecessary allocations. The `cached` row shows
 the better performance reusing a formatter.
 
-| Time (ns)        | 0.0 | 0.1234 | 2.718281828459045 | 1.797693148623157e307 |
-| ---------------- | --- | ------ | ----------------- | --------------------- |
-| numfmt - default | 35  | 115    | 153               | 195                   |
-| numfmt - cached  | 2   | 75     | 89                | 126                   |
-| std              | 35  | 96     | 105               | 214                   |
+| Time (ns)                   | 0.0 | 0.1234 | 2.718281828459045 | 1.797693148623157e307 |
+| --------------------------- | --- | ------ | ----------------- | --------------------- |
+| numfmt - default            | 28  | 73     | 84                | 113                   |
+| numfmt - cached             | 4   | 46     | 60                | 87                    |
+| numfmt - cached (to string) | 4   | 46     | 60                | 88                    |
+| std                         | 18  | 42     | 57                | 131                   |
 
 # Example - File size formatter
 Using a combination of a scale, suffix, and precision, a file size printer can be constructed:
