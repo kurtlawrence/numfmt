@@ -10,8 +10,8 @@ keywords = ["float-format", "number-format", "formatting"]
 categories = ["localization", "value-formatting"]
 
 [dependencies]
-dtoa = "1"
-itoa = "1"
+dtoa = "1.0.10"
+itoa = "1.0.15"
 
 [dev-dependencies]
 criterion = "0.6"
