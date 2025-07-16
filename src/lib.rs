@@ -496,14 +496,32 @@ impl Formatter {
 
     /// Format any number implementing [`Numeric`].
     pub fn fmt2<N: Numeric>(&mut self, num: N) -> &str {
+        let mut buf = std::mem::take(&mut self.strbuf);
+        let bytes = self.fmt_into_buf(&mut buf, num);
+        self.strbuf = buf;
+        std::str::from_utf8(&self.strbuf[..bytes]).expect("will be valid string")
+    }
+
+    /// Format the number into `strbuf`. Returns the number of bytes written.
+    fn fmt_into_buf<N: Numeric>(&self, strbuf: &mut [u8], num: N) -> usize {
+        debug_assert_eq!(
+            strbuf.len(),
+            BUF_LEN,
+            "the buffer is expected to be {BUF_LEN} wide"
+        );
+
         if num.is_nan() {
-            "NaN"
+            strbuf[..3].copy_from_slice(b"NaN");
+            3
         } else if num.is_infinite() && num.is_negative() {
-            "-∞"
+            strbuf[..4].copy_from_slice(b"-\xE2\x88\x9E"); // -∞
+            4
         } else if num.is_infinite() {
-            "∞"
+            strbuf[..3].copy_from_slice(b"\xE2\x88\x9E");
+            3
         } else if num.is_zero() {
-            "0"
+            strbuf[..1].copy_from_slice(b"0");
+            1
         } else {
             let num = (self.convert)(num.to_f64());
 
@@ -525,27 +543,27 @@ impl Formatter {
                     Unspecified => SN_PREC,
                     x => x,
                 };
-                let cursor = self.start + self.write_num(num, precision);
-                self.strbuf[cursor] = b'e'; // exponent
+                let cursor = self.start + self.write_num(strbuf, num, precision);
+                strbuf[cursor] = b'e'; // exponent
                 let cursor = 1 + cursor;
                 let written = {
                     let mut buf = itoa::Buffer::new();
                     let s = buf.format(exponent);
                     let end = cursor + s.len();
-                    self.strbuf[cursor..end].copy_from_slice(s.as_bytes());
+                    strbuf[cursor..end].copy_from_slice(s.as_bytes());
                     s.len()
                 };
                 let cursor = cursor + written;
-                self.apply_suffix_and_output(cursor)
+                self.apply_suffix(strbuf, cursor)
             } else {
                 // write out the scaled number
-                let mut cursor = self.start + self.write_num(scaled, self.precision);
+                let mut cursor = self.start + self.write_num(strbuf, scaled, self.precision);
                 if !unit.is_empty() {
                     let s = cursor;
                     cursor += unit.len();
-                    self.strbuf[s..cursor].copy_from_slice(unit.as_bytes());
+                    strbuf[s..cursor].copy_from_slice(unit.as_bytes());
                 }
-                self.apply_suffix_and_output(cursor)
+                self.apply_suffix(strbuf, cursor)
             }
         }
     }
@@ -553,7 +571,7 @@ impl Formatter {
     /// Writes `num` into the string buffer with the specified `precision`.
     /// Returns the number of bytes written.
     /// Injects the thousands separator into the integer portion if it exists.
-    fn write_num(&mut self, num: f64, precision: Precision) -> usize {
+    fn write_num(&self, strbuf: &mut [u8], num: f64, precision: Precision) -> usize {
         let mut tmp = dtoa::Buffer::new();
         let s = tmp.format(num);
         let tmp = s.as_bytes();
@@ -566,7 +584,7 @@ impl Formatter {
 
         for i in 0..n {
             let byte = tmp[i]; // obtain byte
-            self.strbuf[idx] = byte; // write byte
+            strbuf[idx] = byte; // write byte
             idx += 1;
             written += 1; // increment counter
 
@@ -582,11 +600,11 @@ impl Formatter {
                     digits = 0
                 }
             } else if in_frac && byte == b'.' && self.comma {
-                self.strbuf[idx - 1] = b',';
+                strbuf[idx - 1] = b',';
             } else if !in_frac && thou == 3 {
                 if let Some(sep) = self.thou_sep {
                     thou = 0;
-                    self.strbuf[idx] = sep;
+                    strbuf[idx] = sep;
                     idx += 1;
                     written += 1;
                 }
@@ -605,13 +623,13 @@ impl Formatter {
         written
     }
 
-    fn apply_suffix_and_output(&mut self, mut pos: usize) -> &str {
+    fn apply_suffix(&self, strbuf: &mut [u8], mut pos: usize) -> usize {
         if !self.suffix.is_empty() {
             let s = pos;
             pos = s + self.suffix_len;
-            self.strbuf[s..pos].copy_from_slice(&self.suffix[..self.suffix_len]);
+            strbuf[s..pos].copy_from_slice(&self.suffix[..self.suffix_len]);
         }
-        std::str::from_utf8(&self.strbuf[..pos]).expect("will be valid string")
+        pos
     }
 }
 
