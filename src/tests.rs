@@ -1,13 +1,12 @@
 use super::*;
 use quickcheck_macros::quickcheck;
-use std::f64::*;
 
 #[test]
 fn nan_and_inf() {
     let mut f = Formatter::new();
-    assert_eq!(f.fmt(INFINITY), "∞");
-    assert_eq!(f.fmt(NEG_INFINITY), "-∞");
-    assert_eq!(f.fmt(NAN), "NaN");
+    assert_eq!(f.fmt2(f64::INFINITY), "∞");
+    assert_eq!(f.fmt2(f64::NEG_INFINITY), "-∞");
+    assert_eq!(f.fmt2(f64::NAN), "NaN");
 }
 
 #[test]
@@ -55,13 +54,13 @@ fn sn_reduction() {
 #[test]
 fn sn_tests() {
     let mut f = Formatter::new().scales(Scales::none());
-    assert_eq!(f.fmt(123.4567e43), "1.234567e45");
-    assert_eq!(f.fmt(123.4567e-43), "1.234567e-41");
-    assert_eq!(f.fmt(-123.4567e-43), "-1.234567e-41");
-    assert_eq!(f.fmt(-123.4567e43), "-1.234567e45");
-    assert_eq!(f.fmt(0.000000007894), "7.893999e-9");
-    assert_eq!(f.fmt(123454023590854.0), "1.234540e14");
-    assert_eq!(f.fmt(123.456789e99), "1.234567e101");
+    assert_eq!(f.fmt2(123.4567e43), "1.234567e45");
+    assert_eq!(f.fmt2(123.4567e-43), "1.234567e-41");
+    assert_eq!(f.fmt2(-123.4567e-43), "-1.234567e-41");
+    assert_eq!(f.fmt2(-123.4567e43), "-1.234567e45");
+    assert_eq!(f.fmt2(0.000000007894), "7.893999e-9");
+    assert_eq!(f.fmt2(123454023590854.0), "1.234540e14");
+    assert_eq!(f.fmt2(123.456789e99), "1.234567e101");
 }
 
 #[test]
@@ -71,18 +70,18 @@ fn separator_tests() {
         .separator(',')
         .unwrap()
         .scales(Scales::none());
-    assert_eq!(f.fmt(123456789_f64), "123,456,789.0");
-    assert_eq!(f.fmt(12345678_f64), "12,345,678.0");
-    assert_eq!(f.fmt(1234567_f64), "1,234,567.0");
-    assert_eq!(f.fmt(123456_f64), "123,456.0");
-    assert_eq!(f.fmt(1234_f64), "1,234.0");
-    assert_eq!(f.fmt(123_f64), "123.0");
-    assert_eq!(f.fmt(0.0), "0");
-    assert_eq!(f.fmt(0.1234), "0.1234");
-    assert_eq!(f.fmt(-123.0), "-123.0");
-    assert_eq!(f.fmt(-1234.0), "-1,234.0");
-    assert_eq!(f.fmt(-1234567.0), "-1,234,567.0");
-    assert_eq!(f.fmt(-123456789101.0), "-123,456,789,101.0");
+    assert_eq!(f.fmt2(123456789_f64), "123,456,789.0");
+    assert_eq!(f.fmt2(12345678_f64), "12,345,678.0");
+    assert_eq!(f.fmt2(1234567_f64), "1,234,567.0");
+    assert_eq!(f.fmt2(123456_f64), "123,456.0");
+    assert_eq!(f.fmt2(1234_f64), "1,234.0");
+    assert_eq!(f.fmt2(123_f64), "123.0");
+    assert_eq!(f.fmt2(0.0), "0");
+    assert_eq!(f.fmt2(0.1234), "0.1234");
+    assert_eq!(f.fmt2(-123.0), "-123.0");
+    assert_eq!(f.fmt2(-1234.0), "-1,234.0");
+    assert_eq!(f.fmt2(-1234567.0), "-1,234,567.0");
+    assert_eq!(f.fmt2(-123456789101.0), "-123,456,789,101.0");
 }
 
 #[test]
@@ -110,10 +109,10 @@ fn test_scaling() {
 #[test]
 fn scaling_inside_fmtr() {
     let mut f = Formatter::default().precision(Unspecified);
-    assert_eq!(f.fmt(12345678.0), "12.345678 M");
-    assert_eq!(f.fmt(-12345.0), "-12.345 K");
-    assert_eq!(f.fmt(-123.0), "-123.0");
-    assert_eq!(f.fmt(-0.00123), "-0.00123");
+    assert_eq!(f.fmt2(12345678.0), "12.345678 M");
+    assert_eq!(f.fmt2(-12345.0), "-12.345 K");
+    assert_eq!(f.fmt2(-123.0), "-123.0");
+    assert_eq!(f.fmt2(-0.00123), "-0.00123");
 }
 
 #[test]
@@ -123,8 +122,8 @@ fn prefix() {
         .unwrap()
         .prefix("$")
         .unwrap();
-    assert_eq!(f.fmt(123456.0), "$123,456.0");
-    assert_eq!(f.fmt(0.01234), "$0.01234");
+    assert_eq!(f.fmt2(123456.0), "$123,456.0");
+    assert_eq!(f.fmt2(0.01234), "$0.01234");
 }
 
 #[test]
@@ -134,8 +133,8 @@ fn suffix() {
         .unwrap()
         .suffix("%")
         .unwrap();
-    assert_eq!(f.fmt(123456.0), "123,456.0%");
-    assert_eq!(f.fmt(0.1234), "0.1234%");
+    assert_eq!(f.fmt2(123456.0), "123,456.0%");
+    assert_eq!(f.fmt2(0.1234), "0.1234%");
 }
 
 #[test]
@@ -150,7 +149,7 @@ fn buf_lim_testing() {
         .suffix("a suffix !")
         .unwrap();
     assert_eq!(
-        f.fmt(-123456789.0123456789),
+        f.fmt2(-123_456_789.012_345_67),
         "__ chars _-123,456,789.01234567_ten charsa suffix !"
     );
 }
@@ -158,33 +157,33 @@ fn buf_lim_testing() {
 #[test]
 fn decimals_test() {
     let mut f = Formatter::new().precision(Decimals(6));
-    assert_eq!(f.fmt(1234.5), "1234.5");
-    assert_eq!(f.fmt(123.456789111), "123.456789");
+    assert_eq!(f.fmt2(1234.5), "1234.5");
+    assert_eq!(f.fmt2(123.456789111), "123.456789");
 
     f = Formatter::default()
         .scales(Scales::none())
         .precision(Decimals(0));
-    assert_eq!(f.fmt(1123.456), "1,123");
-    assert_eq!(f.fmt(12345678.90123), "12,345,678");
+    assert_eq!(f.fmt2(1123.456), "1,123");
+    assert_eq!(f.fmt2(12345678.90123), "12,345,678");
 
     f = Formatter::default().precision(Decimals(1));
-    assert_eq!(f.fmt(0.001234), "1.2e-3");
+    assert_eq!(f.fmt2(0.001234), "1.2e-3");
     f = Formatter::default().precision(Significance(1));
-    assert_eq!(f.fmt(0.001234), "1e-3");
+    assert_eq!(f.fmt2(0.001234), "1e-3");
 }
 
 #[test]
 fn significance_test() {
     let mut f = Formatter::default().precision(Significance(2));
-    assert_eq!(f.fmt(1234.0), "1.2 K");
-    assert_eq!(f.fmt(1.02), "1.0");
+    assert_eq!(f.fmt2(1234.0), "1.2 K");
+    assert_eq!(f.fmt2(1.02), "1.0");
 }
 
 #[test]
 fn currency_test() {
     let mut f = Formatter::currency("$").unwrap();
-    assert_eq!(f.fmt(12345.6789), "$12,345.67");
-    assert_eq!(f.fmt(1234_f64), "$1,234.0");
+    assert_eq!(f.fmt2(12345.6789), "$12,345.67");
+    assert_eq!(f.fmt2(1234_f64), "$1,234.0");
 
     let f = Formatter::currency("invalid length prefix");
     assert_eq!(
@@ -196,9 +195,9 @@ fn currency_test() {
 #[test]
 fn percentage_tests() {
     let mut f = Formatter::percentage();
-    assert_eq!(f.fmt(0.678912), "67.8912%");
-    assert_eq!(f.fmt(1.23), "123.0%");
-    assert_eq!(f.fmt(1.2), "120.0%");
+    assert_eq!(f.fmt2(0.678912), "67.8912%");
+    assert_eq!(f.fmt2(1.23), "123.0%");
+    assert_eq!(f.fmt2(1.2), "120.0%");
 }
 
 #[test]
@@ -297,10 +296,10 @@ fn panicking_number() {
         .precision(Precision::Unspecified)
         .scales(Scales::none());
 
-    let s = fmtr.fmt(0.00316114);
+    let s = fmtr.fmt2(0.00316114);
     assert_eq!(s, "0.0031611399999999999");
 
-    let s = fmtr.fmt(2_f64.powi(67));
+    let s = fmtr.fmt2(2_f64.powi(67));
     assert_eq!(s, "1.475739e20");
 }
 
@@ -308,18 +307,18 @@ fn panicking_number() {
 fn panicking_number2() {
     let mut f = Formatter::default();
 
-    let s = f.fmt(-0.0025053862329988824);
+    let s = f.fmt2(-0.0025053862329988824);
     assert_eq!(s, "-0.002");
 }
 
 #[test]
 fn eu_testing() {
     let mut f: Formatter = "[,2]".parse().unwrap();
-    let s = f.fmt(1.23);
+    let s = f.fmt2(1.23);
     assert_eq!(s, "1,23");
 
     let mut f: Formatter = "[n/.]".parse().unwrap();
-    let s = f.fmt(12345.0);
+    let s = f.fmt2(12345.0);
     assert_eq!(s, "12.345,0");
 }
 

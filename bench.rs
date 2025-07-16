@@ -1,8 +1,9 @@
+#![allow(clippy::approx_constant)]
 use criterion::*;
 use numfmt::*;
 
 fn black_box<T>(x: T) {
-    criterion::black_box((x, ()).1)
+    std::hint::black_box(x);
 }
 
 // always does; default, cached, std
@@ -10,17 +11,17 @@ macro_rules! repbench {
     ($fn:ident, $val:literal) => {
         fn $fn(c: &mut Criterion) {
             c.bench_function(stringify!(numfmt default $fn), |b| {
-                b.iter(|| black_box(Formatter::default().fmt($val)))
+                b.iter(|| black_box(Formatter::default().fmt2($val)))
             });
 
             c.bench_function(stringify!(numfmt cached $fn), |b| {
                 let mut f = Formatter::default();
-                b.iter(|| black_box(f.fmt($val)))
+                b.iter(|| black_box(f.fmt2($val)))
             });
 
             c.bench_function(stringify!(numfmt cached to string $fn), |b| {
                 let mut f = Formatter::default();
-                b.iter(|| black_box(f.fmt($val)))
+                b.iter(|| black_box(f.fmt2($val)))
             });
 
             c.bench_function(stringify!(std $fn), |b| {

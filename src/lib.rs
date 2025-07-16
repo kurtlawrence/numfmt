@@ -102,7 +102,7 @@
 //! prefix precision scale    separator suffix
 //! ```
 //! > Each component is optional, including the number format. All formats are applied to the
-//! _default_ [`Formatter`] so an empty format results in the default _formatter_.
+//! > _default_ [`Formatter`] so an empty format results in the default _formatter_.
 //!
 //! ## Prefix and Suffix
 //! The prefix and suffix are bound to the supported lengths, and can have any character in them.
@@ -691,7 +691,7 @@ impl std::str::FromStr for Formatter {
 impl PartialEq for Formatter {
     #[allow(clippy::suspicious_operation_groupings)]
     fn eq(&self, other: &Self) -> bool {
-        self.convert == other.convert
+        std::ptr::fn_addr_eq(self.convert, other.convert)
             && self.precision == other.precision
             && self.thou_sep == other.thou_sep
             // need to use the other suffix len.
@@ -753,23 +753,19 @@ impl fmt::Display for Error {
         match self {
             InvalidPrefix(prefix) => write!(
                 f,
-                "Invalid prefix `{}`. Prefix is longer than the supported {} bytes",
-                prefix, PREFIX_LIM
+                "Invalid prefix `{prefix}`. Prefix is longer than the supported {PREFIX_LIM} bytes"
             ),
             InvalidSeparator(sep) => write!(
                 f,
-                "Invalid separator `{}`. Separator can only be one byte long",
-                sep
+                "Invalid separator `{sep}`. Separator can only be one byte long"
             ),
             InvalidSuffix(suffix) => write!(
                 f,
-                "Invalid suffix `{}`. Suffix is longer than the supported {} bytes",
-                suffix, SUFFIX_LIM
+                "Invalid suffix `{suffix}`. Suffix is longer than the supported {SUFFIX_LIM} bytes"
             ),
             InvalidUnit(unit) => write!(
                 f,
-                "Invalid unit `{}`. Unit is longer than the supported {} bytes",
-                unit, UNITS_LIM
+                "Invalid unit `{unit}`. Unit is longer than the supported {UNITS_LIM} bytes"
             ),
             ZeroBase => write!(f, "Invalid scale base, base must be greater than zero"),
         }
@@ -814,7 +810,7 @@ impl Scales {
     /// Create a scale which is dummy and does not scale.
     pub fn none() -> Self {
         Self {
-            base: std::u16::MAX,
+            base: u16::MAX,
             units: Vec::new(),
         }
     }

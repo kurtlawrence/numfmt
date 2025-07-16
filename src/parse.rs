@@ -228,28 +228,25 @@ impl error::Error for ParseError {}
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ParseError::FormatterError(e) => write!(f, "formatter error: {}", e),
+            ParseError::FormatterError(e) => write!(f, "formatter error: {e}"),
             ParseError::OutOfPlace(ch) => write!(
                 f,
-                "the character `{}` was found when parser was in prefix state",
-                ch
+                "the character `{ch}` was found when parser was in prefix state"
             ),
             ParseError::Unexp(exp, found) => write!(
                 f,
-                "unexpected character. expected a {} but found '{}'",
-                exp, found
+                "unexpected character. expected a {exp} but found '{found}'"
             ),
             ParseError::PrecisionTooLarge => write!(f, "precision is larger than 255"),
             ParseError::DupScaler(ch) => write!(
                 f,
-                "a scaler has already been set and '{}' can not override",
-                ch
+                "a scaler has already been set and '{ch}' can not override"
             ),
             ParseError::DupPrec(no, n) => {
                 if *no {
                     write!(f, "unspecified precision has already been set")
                 } else {
-                    write!(f, "precision of {} has already been set", n)
+                    write!(f, "precision of {n} has already been set")
                 }
             }
         }
