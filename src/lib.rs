@@ -502,6 +502,42 @@ impl Formatter {
         std::str::from_utf8(&self.strbuf[..bytes]).expect("will be valid string")
     }
 
+    /// Format any number implementing [`Numeric`], appending to the supplied `buf`.
+    ///
+    /// This is functionally the same as [`Self::fmt2`], however it does not use the backing
+    /// buffer, instead extending the supplied string.
+    /// Useful when the receiver is shared.
+    pub fn fmt_into<N: Numeric>(&self, buf: &mut String, num: N) {
+        let start = buf.len();
+
+        // pad string buffer to write into
+        buf.extend(std::iter::repeat_n('\0', self.strbuf.len()));
+
+        // SAFETY: Only UTF-8 characters will be written.
+        let bytes = unsafe { buf.as_bytes_mut() };
+
+        // write the prefix into the buffer
+        bytes[start..start + self.start].copy_from_slice(&self.strbuf[..self.start]);
+
+        let written = self.fmt_into_buf(&mut bytes[start..], num);
+        let end = start + written;
+
+        buf.truncate(end); // drop the unused padding
+
+        debug_assert!(std::str::from_utf8(buf.as_bytes()).is_ok());
+    }
+
+    /// Format any number implementing [`Numeric`], returning an owned [`String`].
+    ///
+    /// This is functionally the same as [`Self::fmt2`], however it does not use the backing
+    /// buffer, instead allocating a new string to write into.
+    /// Useful when the receiver is shared.
+    pub fn fmt_string<N: Numeric>(&self, num: N) -> String {
+        let mut buf = String::new();
+        self.fmt_into(&mut buf, num);
+        buf
+    }
+
     /// Format the number into `strbuf`. Returns the number of bytes written.
     fn fmt_into_buf<N: Numeric>(&self, strbuf: &mut [u8], num: N) -> usize {
         debug_assert_eq!(

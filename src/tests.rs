@@ -1,5 +1,5 @@
-
 use super::*;
+use quickcheck_macros::quickcheck;
 use std::f64::*;
 
 #[test]
@@ -321,4 +321,19 @@ fn eu_testing() {
     let mut f: Formatter = "[n/.]".parse().unwrap();
     let s = f.fmt(12345.0);
     assert_eq!(s, "12.345,0");
+}
+
+#[quickcheck]
+fn fuzz_fmt_into_string(val: f64, mut prefix: String) {
+    let mut fmtr = Formatter::default();
+    let p1 = format!("{prefix}{}", fmtr.fmt2(val));
+    fmtr.fmt_into(&mut prefix, val);
+    assert_eq!(p1, prefix);
+    assert_eq!(fmtr.fmt_string(val), fmtr.fmt2(val));
+
+    fmtr = Formatter::currency("$").unwrap();
+    assert_eq!(fmtr.fmt_string(val), fmtr.fmt2(val));
+
+    fmtr = Formatter::percentage();
+    assert_eq!(fmtr.fmt_string(val), fmtr.fmt2(val));
 }
